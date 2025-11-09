@@ -6,7 +6,7 @@ const cors = require('cors')
 app.use(cors())
 app.use(express.json())
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = "mongodb+srv://Hero-Home:KK3LEiKgxQXTcBnd@cluster0.gwptqtl.mongodb.net/?appName=Cluster0";
 
 app.get('/', (req, res)=>{
@@ -31,12 +31,36 @@ async function run() {
        const result = await serviceCollection.find().toArray()
        res.send(result)
     })
+
+    app.get('/Service/:id' , async(req, res)=>{
+      const id =req.params.id
+      const query = {_id : new ObjectId(id)}
+       const result = await serviceCollection.findOne(query)
+       res.send(result)
+    })
     
  app.get('/home' , async (req, res)=>{
       const result = await serviceCollection.find().limit(6).toArray()
       res.send(result)
     })
 
+  app.post('/Service' , async(req, res)=>{
+      const data = req.body
+      const result = await serviceCollection.insertOne(data)
+      res.send(result)
+    })
+
+    app.put('/Service/:id' , async (req , res)=>{
+      const data = req.body
+      const id = req.params.id
+      const query = {_id : new ObjectId(id)}
+      const update = {
+        $set: data
+      }
+      const options = {}
+      const result = await serviceCollection.updateOne(query , update , options)
+      res.send(result)
+    })
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
