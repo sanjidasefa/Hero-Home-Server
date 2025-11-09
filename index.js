@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const port = process.env.PORT || 6000;
+const port = process.env.PORT || 3000;
 const cors = require('cors')
 
 app.use(cors())
@@ -26,8 +26,18 @@ async function run() {
     const database = client.db('HeroDb')
     const serviceCollection = database.collection('Services')
     const bookingCollection = database.collection('Bookings')
-
+ 
+    app.get('/Service' , async(req, res)=>{
+       const result = await serviceCollection.find().toArray()
+       res.send(result)
+    })
     
+ app.get('/home' , async (req, res)=>{
+      const result = await serviceCollection.find().limit(6).toArray()
+      res.send(result)
+    })
+
+
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
