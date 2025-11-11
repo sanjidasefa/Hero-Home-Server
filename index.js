@@ -61,6 +61,19 @@ async function run() {
       const result = await serviceCollection.updateOne(query , update , options)
       res.send(result)
     })
+      
+     app.get('/my-Services/:email' ,async(req, res)=>{
+      const emailname = req.params.email;
+      const result = await serviceCollection.find({email: emailname}).toArray()
+      res.send(result)
+    })
+
+    app.delete('/Service/:id' , async (req , res)=>{
+       const id = req.params.id
+      const query = {_id : new ObjectId(id)}
+      const result = await serviceCollection.deleteOne(query)
+      res.send(result)
+    })
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
