@@ -6,7 +6,7 @@ const cors = require('cors')
 app.use(cors())
 app.use(express.json())
 
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId, MongoMissingDependencyError } = require('mongodb');
 const uri = "mongodb+srv://Hero-Home:KK3LEiKgxQXTcBnd@cluster0.gwptqtl.mongodb.net/?appName=Cluster0";
 
 app.get('/', (req, res)=>{
@@ -76,9 +76,62 @@ async function run() {
     })
 
     app.post('/My-booking' , async(req, res)=>{
-      const data = req.data
+      const data = req.body
       const result = await bookingCollection.insertOne(data)
       res.send(result)
+    })
+
+      app.get('/My-booking/:email' ,async(req, res)=>{
+      const emailname = req.params.email;
+      const result = await bookingCollection.find({booked_by : emailname}).toArray()
+      res.send(result)
+    })
+
+    app.get('/search' , async (req, res )=> {
+      const {search , minPrice , maxPrice} = req.query
+      const query = {};
+      if(search){
+        query.$or = [
+          {title : {$regex : search, $options: 'i'}},
+          {category : {$regex : search, $options: 'i'}}
+        ]
+      }
+      if(minPrice || maxPrice){
+        query.price = {}
+        if(minPrice){
+          query.price.$gte = parseFloat(minPrice)       
+        }
+        if(maxPrice){
+          query.price.$lte = parseFloat(maxPrice)       
+        }
+      }
+      const result = await serviceCollection.find(query).toArray();
+      res.json(result)
+    })
+
+    app.post('/services/:id/review' , async(req, res)=>{
+      const id = req.params.id
+      const {name , email , rating , comment} = req.body;
+      const review = {
+        name ,email , rating : parseFloat(rating), comment , createdAt : new Date()
+      }
+      const service  = await serviceCollection.findOne({_id : new ObjectId(id)})
+      if(!service){
+        return;
+      }
+      const currentReview = service.review || []
+      const newRating = ((service.rating || 0)* currentReview.length + parseInt(rating))/(currentReview.length + 1)
+       await serviceCollection.updateOne(
+        { _id : new ObjectId(id)},
+        {
+          $push : {review : review},
+          $set: {
+  rating: newRating
+}
+        }
+      )
+      const updateReview = await serviceCollection.findOne({_id : new ObjectId(id)})
+      res.json(updateReview)
     })
 
     await client.db("admin").command({ ping: 1 });
