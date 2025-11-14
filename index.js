@@ -22,7 +22,7 @@ const client = new MongoClient(uri, {
 });
 async function run() {
   try { 
-    await client.connect();
+    // await client.connect();
     const database = client.db('HeroDb')
     const serviceCollection = database.collection('Services')
     const bookingCollection = database.collection('Bookings')
@@ -109,18 +109,18 @@ async function run() {
       res.json(result)
     })
 
-    app.post('/services/:id/review' , async(req, res)=>{
+    app.post('/Service/:id/review' , async(req, res)=>{
       const id = req.params.id
-      const {name , email , rating , comment} = req.body;
+      const {name , email , rating , comment,photo} = req.body;
       const review = {
-        name ,email , rating : parseFloat(rating), comment , createdAt : new Date()
+        name ,email , rating : parseFloat(rating), comment,photo , createdAt : new Date()
       }
       const service  = await serviceCollection.findOne({_id : new ObjectId(id)})
       if(!service){
         return;
       }
       const currentReview = service.review || []
-      const newRating = ((service.rating || 0)* currentReview.length + parseInt(rating))/(currentReview.length + 1)
+      const newRating = ((service.rating || 0)* currentReview.length + parseFloat(rating))/(currentReview.length + 1)
        await serviceCollection.updateOne(
         { _id : new ObjectId(id)},
         {
@@ -134,7 +134,7 @@ async function run() {
       res.json(updateReview)
     })
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // await client.close();
