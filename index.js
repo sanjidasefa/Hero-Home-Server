@@ -1,28 +1,37 @@
+require('dotenv').config();  
 const express = require('express');
 const app = express();
 const port = process.env.PORT || 3000;
 const cors = require('cors')
 
+
 app.use(cors())
 app.use(express.json())
+        
+const { MongoClient, ObjectId } = require('mongodb');
 
-const { MongoClient, ServerApiVersion, ObjectId, MongoMissingDependencyError } = require('mongodb');
-const uri = "mongodb+srv://Hero-Home:KK3LEiKgxQXTcBnd@cluster0.gwptqtl.mongodb.net/?appName=Cluster0";
+const client = new MongoClient(process.env.MONGO_URI, {
+  serverApi: { version: '1' }
+});
+
+
+// const { MongoClient, ServerApiVersion, ObjectId, MongoMissingDependencyError } = require('mongodb');
+// const uri = "mongodb+srv://Hero-Home:KK3LEiKgxQXTcBnd@cluster0.gwptqtl.mongodb.net/?appName=Cluster0";
 
 app.get('/', (req, res)=>{
   res.send('server is running')
 })
 
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
-});
+// const client = new MongoClient(uri, {
+//   serverApi: {
+//     version: ServerApiVersion.v1,
+//     strict: true,
+//     deprecationErrors: true,
+//   }
+// });
 async function run() {
   try { 
-    // await client.connect();
+    await client.connect();
     const database = client.db('HeroDb')
     const serviceCollection = database.collection('Services')
     const bookingCollection = database.collection('Bookings')
@@ -131,10 +140,13 @@ async function run() {
         }
       )
       const updateReview = await serviceCollection.findOne({_id : new ObjectId(id)})
-      res.json(updateReview)
+      res.json({
+        reviws : updateReview.reviws,
+        ratins : newRating
+      })
     })
 
-    // await client.db("admin").command({ ping: 1 });
+    await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // await client.close();
