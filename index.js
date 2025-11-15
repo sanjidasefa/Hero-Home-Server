@@ -4,7 +4,6 @@ const app = express();
 const port = process.env.PORT || 3000;
 const cors = require('cors')
 
-
 app.use(cors())
 app.use(express.json())
         
@@ -14,21 +13,10 @@ const client = new MongoClient(process.env.MONGO_URI, {
   serverApi: { version: '1' }
 });
 
-
-// const { MongoClient, ServerApiVersion, ObjectId, MongoMissingDependencyError } = require('mongodb');
-// const uri = "mongodb+srv://Hero-Home:KK3LEiKgxQXTcBnd@cluster0.gwptqtl.mongodb.net/?appName=Cluster0";
-
 app.get('/', (req, res)=>{
   res.send('server is running')
 })
 
-// const client = new MongoClient(uri, {
-//   serverApi: {
-//     version: ServerApiVersion.v1,
-//     strict: true,
-//     deprecationErrors: true,
-//   }
-// });
 async function run() {
   try { 
     await client.connect();
@@ -49,7 +37,7 @@ async function run() {
     })
     
  app.get('/home' , async (req, res)=>{
-      const result = await serviceCollection.find().limit(6).toArray()
+      const result = await serviceCollection.find().sort({rating: -1}).limit(6).toArray()
       res.send(result)
     })
 
@@ -97,23 +85,19 @@ async function run() {
     })
 
     app.get('/search' , async (req, res )=> {
-      const {search , minPrice , maxPrice} = req.query
+      const {search } = req.query
       const query = {};
       if(search){
+        const num = parseFloat(search)
+        if(!isNaN(num)){
+          query.price = num
+        }
         query.$or = [
           {title : {$regex : search, $options: 'i'}},
           {category : {$regex : search, $options: 'i'}}
         ]
       }
-      if(minPrice || maxPrice){
-        query.price = {}
-        if(minPrice){
-          query.price.$gte = parseFloat(minPrice)       
-        }
-        if(maxPrice){
-          query.price.$lte = parseFloat(maxPrice)       
-        }
-      }
+      
       const result = await serviceCollection.find(query).toArray();
       res.json(result)
     })
@@ -126,27 +110,25 @@ async function run() {
       }
       const service  = await serviceCollection.findOne({_id : new ObjectId(id)})
       if(!service){
-        return;
+        return res.status(400).json({message : 'service not found'});
       }
       const currentReview = service.review || []
       const newRating = ((service.rating || 0)* currentReview.length + parseFloat(rating))/(currentReview.length + 1)
        await serviceCollection.updateOne(
         { _id : new ObjectId(id)},
         {
-          $push : {review : review},
-          $set: {
-  rating: newRating
-}
+          $push : {reviews : review},
+          $set: {rating: newRating}
         }
       )
       const updateReview = await serviceCollection.findOne({_id : new ObjectId(id)})
       res.json({
-        reviws : updateReview.reviws,
-        ratins : newRating
+        reviews : updateReview.review,
+        rating : updateReview.rating
       })
     })
 
-    await client.db("admin").command({ ping: 1 });
+   await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // await client.close();
